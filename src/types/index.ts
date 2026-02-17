@@ -76,14 +76,6 @@ export interface CmpTemplate {
   links?: { self?: string };
 }
 
-// A CMP workflow that can be assigned to a work request.
-export interface CmpWorkflow {
-  id: string;
-  title?: string;
-  name?: string;
-  description?: string;
-}
-
 // A snapshot of a form field, stored alongside the public form config.
 export type FormFieldSnapshot = CmpFormField;
 

@@ -14,7 +14,6 @@ const createFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
   cmpTemplateId: z.string().min(1, "CMP template ID is required"),
-  cmpWorkflowId: z.string().optional(),
   accessType: z.enum(["OPEN_URL", "ONE_TIME_URL"]),
 });
 
@@ -83,16 +82,6 @@ export async function POST(request: NextRequest) {
     const client = await getCmpClient();
     const template = await client.getTemplate(parsed.cmpTemplateId);
 
-    // If a workflow ID is provided, fetch workflows to resolve the name.
-    let cmpWorkflowName: string | null = null;
-    if (parsed.cmpWorkflowId) {
-      const workflows = await client.getWorkflows();
-      const workflow = workflows.find((w) => w.id === parsed.cmpWorkflowId);
-      if (workflow) {
-        cmpWorkflowName = workflow.title || workflow.name || null;
-      }
-    }
-
     // Get the active credential ID to link the form to the credential used.
     const credential = await prisma.cmpCredential.findFirst({
       where: { isActive: true },
@@ -113,8 +102,6 @@ export async function POST(request: NextRequest) {
         description: parsed.description,
         cmpTemplateId: parsed.cmpTemplateId,
         cmpTemplateName: template.title,
-        cmpWorkflowId: parsed.cmpWorkflowId,
-        cmpWorkflowName,
         formFieldsSnapshot: template.form_fields as unknown as Prisma.InputJsonValue,
         accessType: parsed.accessType,
         createdById: user.sub,

@@ -47,8 +47,6 @@ interface FormDetail {
   description: string | null;
   cmpTemplateId: string;
   cmpTemplateName: string;
-  cmpWorkflowId: string | null;
-  cmpWorkflowName: string | null;
   accessType: "OPEN_URL" | "ONE_TIME_URL";
   isActive: boolean;
   createdAt: string;
@@ -258,12 +256,6 @@ export default function FormDetailPage() {
             Access.{" "}
             {form.accessType === "OPEN_URL" ? "Open URL" : "One-Time URL"}
           </span>
-          {form.cmpWorkflowName && (
-            <>
-              <span>|</span>
-              <span>Workflow. {form.cmpWorkflowName}</span>
-            </>
-          )}
         </div>
         {form.description && (
           <p className="mt-3 text-zinc-600 dark:text-zinc-300">

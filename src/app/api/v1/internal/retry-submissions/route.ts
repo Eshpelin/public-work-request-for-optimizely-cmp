@@ -84,7 +84,6 @@ export async function POST() {
         const workRequest = await client.createWorkRequest(
           submission.form.cmpTemplateId,
           serializedFields,
-          submission.form.cmpWorkflowId ?? undefined
         );
 
         workRequestId = workRequest.id;

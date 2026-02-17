@@ -10,7 +10,7 @@ import { logAudit } from "@/lib/audit";
 
 const createUrlsSchema = z.object({
   count: z.number().int().min(1).max(500).default(1),
-  expiresAt: z.string().datetime().optional(),
+  expiresAt: z.string().optional(),
 });
 
 export async function POST(

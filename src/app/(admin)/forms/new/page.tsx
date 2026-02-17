@@ -8,26 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 
 interface Template {
   id: string;
   title: string;
-  description?: string;
-}
-
-interface Workflow {
-  id: string;
-  title?: string;
-  name?: string;
   description?: string;
 }
 
@@ -46,9 +32,6 @@ export default function NewFormPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [accessType, setAccessType] = useState("OPEN_URL");
-  const [workflows, setWorkflows] = useState<Workflow[]>([]);
-  const [loadingWorkflows, setLoadingWorkflows] = useState(false);
-  const [selectedWorkflowId, setSelectedWorkflowId] = useState("");
 
   // Submission state
   const [submitting, setSubmitting] = useState(false);
@@ -72,26 +55,6 @@ export default function NewFormPage() {
 
     fetchTemplates();
   }, []);
-
-  useEffect(() => {
-    if (step === 2) {
-      setLoadingWorkflows(true);
-      async function fetchWorkflows() {
-        try {
-          const res = await fetch("/api/v1/cmp/workflows");
-          if (!res.ok) throw new Error("Failed to fetch workflows");
-          const data = await res.json();
-          setWorkflows(data.workflows ?? []);
-        } catch {
-          // Workflows are optional, so we silently continue.
-        } finally {
-          setLoadingWorkflows(false);
-        }
-      }
-
-      fetchWorkflows();
-    }
-  }, [step]);
 
   const handleSelectTemplate = (template: Template) => {
     setSelectedTemplate(template);
@@ -123,7 +86,6 @@ export default function NewFormPage() {
           description: description.trim() || undefined,
           cmpTemplateId: selectedTemplate.id,
           accessType,
-          cmpWorkflowId: selectedWorkflowId || undefined,
         }),
       });
 
@@ -279,29 +241,6 @@ export default function NewFormPage() {
                 </div>
               </RadioGroup>
             </div>
-
-            {loadingWorkflows ? (
-              <Spinner size="sm" label="Loading workflows..." />
-            ) : workflows.length > 0 ? (
-              <div className="space-y-2">
-                <Label>Workflow (optional)</Label>
-                <Select
-                  value={selectedWorkflowId}
-                  onValueChange={setSelectedWorkflowId}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select a workflow" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {workflows.map((wf) => (
-                      <SelectItem key={wf.id} value={wf.id}>
-                        {wf.title || wf.name || wf.id}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : null}
           </div>
 
           <div className="flex justify-between mt-6">

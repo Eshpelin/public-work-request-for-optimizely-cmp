@@ -1,11 +1,11 @@
 /**
  * API client for the Optimizely CMP REST API.
  * Handles authenticated requests, automatic token refresh on 401,
- * and provides typed methods for templates, workflows, and work requests.
+ * and provides typed methods for templates and work requests.
  */
 
 import { CmpTokenManager } from "./auth";
-import type { CmpTemplate, CmpWorkflow } from "@/types";
+import type { CmpTemplate } from "@/types";
 
 const BASE_URL = "https://api.cmp.optimizely.com";
 
@@ -128,13 +128,6 @@ export class CmpClient {
   }
 
   /**
-   * Fetches all workflows from the CMP API, handling pagination.
-   */
-  async getWorkflows(): Promise<CmpWorkflow[]> {
-    return this.fetchAllPages<CmpWorkflow>("/v3/workflows");
-  }
-
-  /**
    * Creates a new work request in CMP.
    */
   async createWorkRequest(
@@ -144,16 +137,11 @@ export class CmpClient {
       type: string;
       values: unknown[];
     }>,
-    workflowId?: string
   ): Promise<{ id: string }> {
     const body: Record<string, unknown> = {
       template_id: templateId,
       form_fields: formFields,
     };
-
-    if (workflowId) {
-      body.workflow_id = workflowId;
-    }
 
     return this.request<{ id: string }>("POST", "/v3/work-requests", body);
   }

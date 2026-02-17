@@ -16,6 +16,7 @@ function evaluateConditions(
   rule: CmpLogicRule,
   values: Record<string, unknown>
 ): boolean {
+  if (!rule.conditions || rule.conditions.length === 0) return false;
   return rule.conditions.every((condition) => {
     const fieldValue = values[condition.field_identifier];
 

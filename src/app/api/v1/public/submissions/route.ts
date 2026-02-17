@@ -186,77 +186,71 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Fire-and-forget the CMP work request creation.
-    // This runs in the background after the response is returned.
-    const backgroundPromise = (async () => {
-      try {
-        const credential = formUrl.form.credential;
-        if (!credential || !credential.isActive) {
-          throw new Error("No active CMP credentials available for this form.");
-        }
-
-        const client = createCmpClientFromCredential(credential);
-
-        // Serialize form data for the CMP API.
-        const serializedFields = serializeFormData(
-          fields,
-          parsedFormData,
-          allFieldIdentifiers
-        );
-
-        // Create the work request.
-        const workRequest = await client.createWorkRequest(
-          formUrl.form.cmpTemplateId,
-          serializedFields,
-          formUrl.form.cmpWorkflowId ?? undefined
-        );
-
-        // Upload files sequentially if any exist.
-        for (const file of files) {
-          await client.uploadAttachment(
-            workRequest.id,
-            file.fileName,
-            file.buffer,
-            file.contentType
-          );
-        }
-
-        // Mark submission as successfully submitted.
-        await prisma.submission.update({
-          where: { id: submission.id },
-          data: {
-            status: "SUBMITTED",
-            cmpWorkRequestId: workRequest.id,
-            completedAt: new Date(),
-          },
-        });
-
-        logger.info(
-          { submissionId: submission.id, workRequestId: workRequest.id },
-          "CMP work request created successfully."
-        );
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Unknown error";
-
-        logger.error(
-          { submissionId: submission.id, error: errorMessage },
-          "Failed to create CMP work request."
-        );
-
-        await prisma.submission.update({
-          where: { id: submission.id },
-          data: {
-            status: "FAILED",
-            errorMessage,
-            nextRetryAt: new Date(Date.now() + RETRY_BACKOFF_MS[0]),
-          },
-        });
+    // Submit to CMP synchronously so the user sees any errors.
+    try {
+      const credential = formUrl.form.credential;
+      if (!credential || !credential.isActive) {
+        throw new Error("No active CMP credentials available for this form.");
       }
-    })();
 
-    // Prevent unhandled rejection warnings.
-    backgroundPromise.catch(() => {});
+      const client = createCmpClientFromCredential(credential);
+
+      const serializedFields = serializeFormData(
+        fields,
+        parsedFormData,
+        allFieldIdentifiers
+      );
+
+      const workRequest = await client.createWorkRequest(
+        formUrl.form.cmpTemplateId,
+        serializedFields,
+      );
+
+      for (const file of files) {
+        await client.uploadAttachment(
+          workRequest.id,
+          file.fileName,
+          file.buffer,
+          file.contentType
+        );
+      }
+
+      await prisma.submission.update({
+        where: { id: submission.id },
+        data: {
+          status: "SUBMITTED",
+          cmpWorkRequestId: workRequest.id,
+          completedAt: new Date(),
+        },
+      });
+
+      logger.info(
+        { submissionId: submission.id, workRequestId: workRequest.id },
+        "CMP work request created successfully."
+      );
+    } catch (cmpError) {
+      const errorMessage =
+        cmpError instanceof Error ? cmpError.message : "Unknown error";
+
+      logger.error(
+        { submissionId: submission.id, error: errorMessage },
+        "Failed to create CMP work request."
+      );
+
+      await prisma.submission.update({
+        where: { id: submission.id },
+        data: {
+          status: "FAILED",
+          errorMessage,
+          nextRetryAt: new Date(Date.now() + RETRY_BACKOFF_MS[0]),
+        },
+      });
+
+      return NextResponse.json(
+        { error: { message: "Failed to submit to CMP. Please try again later." } },
+        { status: 502 }
+      );
+    }
 
     logAudit({
       action: "submission.create",
@@ -271,7 +265,7 @@ export async function POST(request: NextRequest) {
         submissionId: submission.id,
         message: "Submission received",
       },
-      { status: 202 }
+      { status: 200 }
     );
   } catch (error) {
     logger.error({ error }, "Unexpected error in submission handler.");
