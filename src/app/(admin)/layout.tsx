@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { Button } from "@heroui/react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { getCsrfToken } from "@/lib/csrf-client";
 
 const navItems = [
@@ -61,7 +62,7 @@ export default function AdminLayout({
               onClick={() => setSidebarOpen(false)}
               className={`flex items-center px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 pathname === item.href
-                  ? "bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400"
+                  ? "bg-primary/10 text-primary"
                   : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
               }`}
             >
@@ -98,11 +99,11 @@ export default function AdminLayout({
           </div>
           <Button
             size="sm"
-            variant="flat"
-            color="danger"
-            isLoading={loggingOut}
-            onPress={handleLogout}
+            variant="outline"
+            onClick={handleLogout}
+            disabled={loggingOut}
           >
+            {loggingOut && <Spinner size="sm" />}
             Logout
           </Button>
         </header>

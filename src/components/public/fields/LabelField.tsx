@@ -1,6 +1,7 @@
 "use client";
 
-import { Chip } from "@heroui/react";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import type { FieldProps } from "./types";
 
 export default function LabelField({
@@ -38,18 +39,18 @@ export default function LabelField({
   };
 
   return (
-    <div className="w-full">
-      <label className="text-sm font-medium mb-2 block">
+    <div className="w-full space-y-2">
+      <Label className="text-sm font-medium">
         {field.label}
-        {field.is_required && <span className="text-danger ml-1">*</span>}
-      </label>
+        {field.is_required && <span className="text-destructive ml-1">*</span>}
+      </Label>
       <div className="flex flex-wrap gap-2">
         {visibleChoices.map((choice) => {
           const isSelected = selectedIds.includes(choice.id);
           return (
-            <Chip
+            <Badge
               key={choice.id}
-              variant={isSelected ? "solid" : "bordered"}
+              variant={isSelected ? "default" : "outline"}
               className="cursor-pointer select-none"
               style={
                 choice.color
@@ -61,11 +62,11 @@ export default function LabelField({
               onClick={() => handleToggle(choice.id)}
             >
               {choice.name}
-            </Chip>
+            </Badge>
           );
         })}
       </div>
-      {error && <p className="text-danger text-xs mt-1">{error}</p>}
+      {error && <p className="text-destructive text-xs mt-1">{error}</p>}
     </div>
   );
 }

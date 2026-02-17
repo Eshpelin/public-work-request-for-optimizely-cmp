@@ -3,24 +3,26 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { getCsrfToken } from "@/lib/csrf-client";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import {
-  Button,
-  Chip,
-  Input,
-  Spinner,
   Table,
   TableHeader,
-  TableColumn,
+  TableHead,
   TableBody,
   TableRow,
   TableCell,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
-} from "@heroui/react";
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface FormUrl {
   id: string;
@@ -66,23 +68,41 @@ function getUrlStatus(url: FormUrl) {
   return "available";
 }
 
-function getUrlStatusColor(status: string) {
-  if (status === "used") return "default" as const;
-  if (status === "expired") return "warning" as const;
-  return "success" as const;
+function getUrlStatusVariant(status: string) {
+  if (status === "used") return "secondary" as const;
+  if (status === "expired") return "outline" as const;
+  return "default" as const;
 }
 
-function getSubmissionStatusColor(status: Submission["status"]) {
+function getUrlStatusClasses(status: string) {
+  if (status === "available") return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+  if (status === "expired") return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400";
+  return "";
+}
+
+function getSubmissionStatusVariant(status: Submission["status"]) {
   switch (status) {
     case "SUBMITTED":
-      return "success" as const;
+      return "default" as const;
     case "PENDING":
     case "RETRYING":
-      return "warning" as const;
+      return "outline" as const;
     case "FAILED":
-      return "danger" as const;
+      return "destructive" as const;
     default:
-      return "default" as const;
+      return "secondary" as const;
+  }
+}
+
+function getSubmissionStatusClasses(status: Submission["status"]) {
+  switch (status) {
+    case "SUBMITTED":
+      return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400";
+    case "PENDING":
+    case "RETRYING":
+      return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400";
+    default:
+      return "";
   }
 }
 
@@ -101,7 +121,7 @@ export default function FormDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   // URL generation state
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [modalOpen, setModalOpen] = useState(false);
   const [urlCount, setUrlCount] = useState("1");
   const [expiryDate, setExpiryDate] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -142,7 +162,7 @@ export default function FormDetailPage() {
     if (!form) return;
 
     if (form.accessType === "ONE_TIME_URL") {
-      onOpen();
+      setModalOpen(true);
       return;
     }
 
@@ -179,7 +199,7 @@ export default function FormDetailPage() {
       });
       if (!res.ok) throw new Error("Failed to generate URLs");
       await fetchForm();
-      onClose();
+      setModalOpen(false);
       setUrlCount("1");
       setExpiryDate("");
     } catch (err) {
@@ -224,13 +244,12 @@ export default function FormDetailPage() {
       <div>
         <div className="flex items-start justify-between mb-2">
           <h1 className="text-2xl font-bold">{form.title}</h1>
-          <Chip
-            size="sm"
-            color={form.isActive ? "success" : "default"}
-            variant="flat"
+          <Badge
+            variant={form.isActive ? "default" : "secondary"}
+            className={form.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : ""}
           >
             {form.isActive ? "Active" : "Inactive"}
-          </Chip>
+          </Badge>
         </div>
         <div className="flex flex-wrap gap-3 text-sm text-zinc-500 dark:text-zinc-400">
           <span>Template. {form.cmpTemplateName}</span>
@@ -254,7 +273,7 @@ export default function FormDetailPage() {
       </div>
 
       {error && (
-        <div className="p-3 rounded-lg bg-danger-50 dark:bg-danger-900/20 text-danger-600 dark:text-danger-400 text-sm">
+        <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
           {error}
         </div>
       )}
@@ -264,11 +283,11 @@ export default function FormDetailPage() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">URLs</h2>
           <Button
-            color="primary"
             size="sm"
-            isLoading={generating}
-            onPress={handleGenerateUrls}
+            disabled={generating}
+            onClick={handleGenerateUrls}
           >
+            {generating && <Spinner size="sm" />}
             Generate URLs
           </Button>
         </div>
@@ -278,14 +297,16 @@ export default function FormDetailPage() {
             No URLs generated yet. Click the button above to create one.
           </p>
         ) : (
-          <Table aria-label="Form URLs">
+          <Table>
             <TableHeader>
-              <TableColumn>Token</TableColumn>
-              <TableColumn>Full URL</TableColumn>
-              <TableColumn>Status</TableColumn>
-              <TableColumn>Created</TableColumn>
-              <TableColumn>Expires</TableColumn>
-              <TableColumn>Actions</TableColumn>
+              <TableRow>
+                <TableHead>Token</TableHead>
+                <TableHead>Full URL</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead>Expires</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
             </TableHeader>
             <TableBody>
               {form.formUrls.map((url) => {
@@ -301,13 +322,12 @@ export default function FormDetailPage() {
                       {truncate(fullUrl, 50)}
                     </TableCell>
                     <TableCell>
-                      <Chip
-                        size="sm"
-                        color={getUrlStatusColor(status)}
-                        variant="flat"
+                      <Badge
+                        variant={getUrlStatusVariant(status)}
+                        className={getUrlStatusClasses(status)}
                       >
                         {status}
-                      </Chip>
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       {new Date(url.createdAt).toLocaleDateString()}
@@ -320,8 +340,8 @@ export default function FormDetailPage() {
                     <TableCell>
                       <Button
                         size="sm"
-                        variant="flat"
-                        onPress={() => copyToClipboard(url.token)}
+                        variant="outline"
+                        onClick={() => copyToClipboard(url.token)}
                       >
                         {copiedToken === url.token ? "Copied!" : "Copy URL"}
                       </Button>
@@ -334,49 +354,55 @@ export default function FormDetailPage() {
         )}
       </div>
 
-      {/* One-Time URL Generation Modal */}
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalContent>
-          <ModalHeader>Generate One-Time URLs</ModalHeader>
-          <ModalBody>
-            <div className="flex flex-col gap-4">
+      {/* One-Time URL Generation Dialog */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Generate One-Time URLs</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="url-count">Number of URLs</Label>
               <Input
+                id="url-count"
                 type="number"
-                label="Number of URLs"
                 placeholder="Enter count (max 500)"
                 value={urlCount}
-                onValueChange={setUrlCount}
+                onChange={(e) => setUrlCount(e.target.value)}
                 min={1}
                 max={500}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="expiry-date">Expiry Date (optional)</Label>
               <Input
+                id="expiry-date"
                 type="date"
-                label="Expiry Date (optional)"
                 placeholder="Select an expiry date"
                 value={expiryDate}
-                onValueChange={setExpiryDate}
+                onChange={(e) => setExpiryDate(e.target.value)}
               />
             </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="flat" onPress={onClose}>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalOpen(false)}>
               Cancel
             </Button>
             <Button
-              color="primary"
-              isLoading={generating}
-              isDisabled={
+              disabled={
+                generating ||
                 !urlCount ||
                 parseInt(urlCount, 10) < 1 ||
                 parseInt(urlCount, 10) > 500
               }
-              onPress={handleGenerateOneTimeUrls}
+              onClick={handleGenerateOneTimeUrls}
             >
+              {generating && <Spinner size="sm" />}
               Generate
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Section C. Submissions */}
       <div>
@@ -387,13 +413,15 @@ export default function FormDetailPage() {
             No submissions yet.
           </p>
         ) : (
-          <Table aria-label="Form submissions">
+          <Table>
             <TableHeader>
-              <TableColumn>ID</TableColumn>
-              <TableColumn>Status</TableColumn>
-              <TableColumn>Work Request ID</TableColumn>
-              <TableColumn>Submitted At</TableColumn>
-              <TableColumn>Error Message</TableColumn>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Work Request ID</TableHead>
+                <TableHead>Submitted At</TableHead>
+                <TableHead>Error Message</TableHead>
+              </TableRow>
             </TableHeader>
             <TableBody>
               {submissions.map((sub) => (
@@ -402,13 +430,12 @@ export default function FormDetailPage() {
                     {truncate(sub.id, 12)}
                   </TableCell>
                   <TableCell>
-                    <Chip
-                      size="sm"
-                      color={getSubmissionStatusColor(sub.status)}
-                      variant="flat"
+                    <Badge
+                      variant={getSubmissionStatusVariant(sub.status)}
+                      className={getSubmissionStatusClasses(sub.status)}
                     >
                       {sub.status}
-                    </Chip>
+                    </Badge>
                   </TableCell>
                   <TableCell className="font-mono text-sm">
                     {sub.cmpWorkRequestId

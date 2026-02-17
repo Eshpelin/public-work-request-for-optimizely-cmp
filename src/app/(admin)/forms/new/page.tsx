@@ -3,18 +3,20 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getCsrfToken } from "@/lib/csrf-client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  Button,
-  Input,
-  Textarea,
-  RadioGroup,
-  Radio,
   Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
   SelectItem,
-  Card,
-  CardBody,
-  Spinner,
-} from "@heroui/react";
+} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 
 interface Template {
   id: string;
@@ -150,7 +152,7 @@ export default function NewFormPage() {
         <div
           className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
             step >= 1
-              ? "bg-primary-500 text-white"
+              ? "bg-primary text-primary-foreground"
               : "bg-zinc-200 dark:bg-zinc-700 text-zinc-500"
           }`}
         >
@@ -159,14 +161,14 @@ export default function NewFormPage() {
         <div
           className={`flex-1 h-0.5 ${
             step >= 2
-              ? "bg-primary-500"
+              ? "bg-primary"
               : "bg-zinc-200 dark:bg-zinc-700"
           }`}
         />
         <div
           className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
             step >= 2
-              ? "bg-primary-500 text-white"
+              ? "bg-primary text-primary-foreground"
               : "bg-zinc-200 dark:bg-zinc-700 text-zinc-500"
           }`}
         >
@@ -175,7 +177,7 @@ export default function NewFormPage() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-danger-50 dark:bg-danger-900/20 text-danger-600 dark:text-danger-400 text-sm">
+        <div className="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm">
           {error}
         </div>
       )}
@@ -199,22 +201,21 @@ export default function NewFormPage() {
               {templates.map((template) => (
                 <Card
                   key={template.id}
-                  isPressable
-                  onPress={() => handleSelectTemplate(template)}
-                  className={`transition-all ${
+                  className={`cursor-pointer transition-all hover:shadow-md ${
                     selectedTemplate?.id === template.id
-                      ? "ring-2 ring-primary-500 bg-primary-50 dark:bg-primary-900/20"
+                      ? "ring-2 ring-primary bg-primary/5"
                       : ""
                   }`}
+                  onClick={() => handleSelectTemplate(template)}
                 >
-                  <CardBody className="px-4 py-3">
+                  <CardContent className="px-4 py-3">
                     <p className="font-medium">{template.title}</p>
                     {template.description && (
                       <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
                         {template.description}
                       </p>
                     )}
-                  </CardBody>
+                  </CardContent>
                 </Card>
               ))}
             </div>
@@ -222,9 +223,8 @@ export default function NewFormPage() {
 
           <div className="flex justify-end mt-6">
             <Button
-              color="primary"
-              isDisabled={!selectedTemplate}
-              onPress={handleNext}
+              disabled={!selectedTemplate}
+              onClick={handleNext}
             >
               Next
             </Button>
@@ -238,63 +238,81 @@ export default function NewFormPage() {
           <h2 className="text-lg font-semibold mb-4">Configure Form</h2>
 
           <div className="flex flex-col gap-5">
-            <Input
-              label="Title"
-              placeholder="Enter form title"
-              value={title}
-              onValueChange={setTitle}
-              isRequired
-            />
+            <div className="space-y-2">
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                placeholder="Enter form title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+              />
+            </div>
 
-            <Textarea
-              label="Description"
-              placeholder="Optional description for this form"
-              value={description}
-              onValueChange={setDescription}
-            />
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Optional description for this form"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
 
-            <RadioGroup
-              label="Access Type"
-              value={accessType}
-              onValueChange={setAccessType}
-            >
-              <Radio value="OPEN_URL">
-                Open URL (anyone with the link)
-              </Radio>
-              <Radio value="ONE_TIME_URL">
-                One-Time URL (single use per link)
-              </Radio>
-            </RadioGroup>
+            <div className="space-y-3">
+              <Label>Access Type</Label>
+              <RadioGroup
+                value={accessType}
+                onValueChange={setAccessType}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="OPEN_URL" id="open-url" />
+                  <Label htmlFor="open-url" className="font-normal">
+                    Open URL (anyone with the link)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="ONE_TIME_URL" id="one-time-url" />
+                  <Label htmlFor="one-time-url" className="font-normal">
+                    One-Time URL (single use per link)
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
 
             {loadingWorkflows ? (
               <Spinner size="sm" label="Loading workflows..." />
             ) : workflows.length > 0 ? (
-              <Select
-                label="Workflow (optional)"
-                placeholder="Select a workflow"
-                selectedKeys={selectedWorkflowId ? [selectedWorkflowId] : []}
-                onSelectionChange={(keys) => {
-                  const selected = Array.from(keys)[0];
-                  setSelectedWorkflowId(selected ? String(selected) : "");
-                }}
-              >
-                {workflows.map((wf) => (
-                  <SelectItem key={wf.id}>{wf.title || wf.name || wf.id}</SelectItem>
-                ))}
-              </Select>
+              <div className="space-y-2">
+                <Label>Workflow (optional)</Label>
+                <Select
+                  value={selectedWorkflowId}
+                  onValueChange={setSelectedWorkflowId}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select a workflow" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {workflows.map((wf) => (
+                      <SelectItem key={wf.id} value={wf.id}>
+                        {wf.title || wf.name || wf.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             ) : null}
           </div>
 
           <div className="flex justify-between mt-6">
-            <Button variant="flat" onPress={handleBack}>
+            <Button variant="outline" onClick={handleBack}>
               Back
             </Button>
             <Button
-              color="primary"
-              isLoading={submitting}
-              isDisabled={!(title ?? "").trim()}
-              onPress={handleSubmit}
+              disabled={submitting || !(title ?? "").trim()}
+              onClick={handleSubmit}
             >
+              {submitting && <Spinner size="sm" />}
               Create Form
             </Button>
           </div>

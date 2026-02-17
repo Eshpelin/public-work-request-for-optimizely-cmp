@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardBody, CardHeader } from "@heroui/react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 interface StatCardProps {
   title: string;
@@ -14,9 +14,9 @@ function StatCard({ title, value }: StatCardProps) {
       <CardHeader className="pb-0 pt-4 px-6">
         <p className="text-sm text-zinc-500 dark:text-zinc-400">{title}</p>
       </CardHeader>
-      <CardBody className="pt-2 px-6 pb-5">
+      <CardContent className="pt-2 px-6 pb-5">
         <p className="text-3xl font-bold">{value}</p>
-      </CardBody>
+      </CardContent>
     </Card>
   );
 }

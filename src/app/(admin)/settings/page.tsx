@@ -2,19 +2,19 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { getCsrfToken } from "@/lib/csrf-client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 import {
-  Button,
-  Input,
-  Card,
-  CardBody,
-  CardHeader,
   Table,
   TableHeader,
-  TableColumn,
+  TableHead,
   TableBody,
   TableRow,
   TableCell,
-} from "@heroui/react";
+} from "@/components/ui/table";
 
 interface Credential {
   id: string;
@@ -133,49 +133,58 @@ export default function SettingsPage() {
         <CardHeader className="px-6 pt-5 pb-0">
           <h2 className="text-lg font-semibold">Add New Credentials</h2>
         </CardHeader>
-        <CardBody className="px-6 pb-6 pt-4">
+        <CardContent className="px-6 pb-6 pt-4">
           <form onSubmit={handleSave} className="flex flex-col gap-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="client-id">Client ID</Label>
+                <Input
+                  id="client-id"
+                  placeholder="Enter client ID"
+                  value={clientId}
+                  onChange={(e) => setClientId(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="client-secret">Client Secret</Label>
+                <Input
+                  id="client-secret"
+                  type="password"
+                  placeholder="Enter client secret"
+                  value={clientSecret}
+                  onChange={(e) => setClientSecret(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="label">Label (optional)</Label>
               <Input
-                label="Client ID"
-                placeholder="Enter client ID"
-                value={clientId}
-                onValueChange={setClientId}
-                isRequired
-              />
-              <Input
-                label="Client Secret"
-                type="password"
-                placeholder="Enter client secret"
-                value={clientSecret}
-                onValueChange={setClientSecret}
-                isRequired
+                id="label"
+                placeholder="e.g. Production CMP"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
               />
             </div>
-            <Input
-              label="Label (optional)"
-              placeholder="e.g. Production CMP"
-              value={label}
-              onValueChange={setLabel}
-            />
             <div>
               <Button
                 type="submit"
-                color="primary"
-                isLoading={saving}
+                disabled={saving}
               >
+                {saving && <Spinner size="sm" />}
                 Save Credentials
               </Button>
             </div>
           </form>
-        </CardBody>
+        </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="px-6 pt-5 pb-0">
           <h2 className="text-lg font-semibold">Existing Credentials</h2>
         </CardHeader>
-        <CardBody className="px-6 pb-6 pt-4">
+        <CardContent className="px-6 pb-6 pt-4">
           {loading ? (
             <p className="text-sm text-zinc-500">Loading credentials...</p>
           ) : credentials.length === 0 ? (
@@ -183,12 +192,14 @@ export default function SettingsPage() {
               No credentials configured yet. Add your first CMP credentials above.
             </p>
           ) : (
-            <Table aria-label="CMP Credentials">
+            <Table>
               <TableHeader>
-                <TableColumn>Label</TableColumn>
-                <TableColumn>Status</TableColumn>
-                <TableColumn>Created</TableColumn>
-                <TableColumn>Actions</TableColumn>
+                <TableRow>
+                  <TableHead>Label</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
               </TableHeader>
               <TableBody>
                 {credentials.map((cred) => (
@@ -212,9 +223,8 @@ export default function SettingsPage() {
                       {!cred.isActive && (
                         <Button
                           size="sm"
-                          variant="flat"
-                          color="success"
-                          onPress={() => handleActivate(cred.id)}
+                          variant="outline"
+                          onClick={() => handleActivate(cred.id)}
                         >
                           Activate
                         </Button>
@@ -225,7 +235,7 @@ export default function SettingsPage() {
               </TableBody>
             </Table>
           )}
-        </CardBody>
+        </CardContent>
       </Card>
     </div>
   );

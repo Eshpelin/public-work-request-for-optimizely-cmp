@@ -2,7 +2,8 @@
 
 import { useCallback, useReducer, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@heroui/react";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { CmpFormField, PublicFormConfig } from "@/types";
 import { FormState, FormAction } from "@/lib/form-engine/types";
 import { validateAllFields } from "@/lib/form-engine/validators";
@@ -206,7 +207,7 @@ export default function DynamicForm({ formConfig, token }: DynamicFormProps) {
           {formConfig.title}
         </h1>
         {formConfig.description && (
-          <p className="mt-2 text-default-500">{formConfig.description}</p>
+          <p className="mt-2 text-muted-foreground">{formConfig.description}</p>
         )}
       </div>
 
@@ -243,18 +244,18 @@ export default function DynamicForm({ formConfig, token }: DynamicFormProps) {
         })}
 
         {submitError && (
-          <div className="p-3 rounded-lg bg-danger-50 text-danger text-sm">
+          <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm">
             {submitError}
           </div>
         )}
 
         <Button
           type="submit"
-          color="primary"
           size="lg"
-          isLoading={submitting}
+          disabled={submitting}
           className="w-full"
         >
+          {submitting && <Spinner size="sm" />}
           {submitting ? "Submitting..." : "Submit"}
         </Button>
       </form>

@@ -2,8 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Input, Card, CardBody, CardHeader } from "@heroui/react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -42,33 +46,39 @@ export default function LoginPage() {
       <CardHeader className="flex flex-col items-center pt-8 pb-0">
         <h1 className="text-2xl font-bold">Sign In</h1>
       </CardHeader>
-      <CardBody className="px-8 pb-8 pt-6">
+      <CardContent className="px-8 pb-8 pt-6">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <Input
-            label="Email"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onValueChange={setEmail}
-            isRequired
-          />
-          <Input
-            label="Password"
-            type="password"
-            placeholder="Enter your password"
-            value={password}
-            onValueChange={setPassword}
-            isRequired
-          />
+          <div className="space-y-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
           {error && (
             <p className="text-sm text-red-500">{error}</p>
           )}
           <Button
             type="submit"
-            color="primary"
             className="w-full mt-2"
-            isLoading={loading}
+            disabled={loading}
           >
+            {loading && <Spinner size="sm" />}
             Sign In
           </Button>
           <p className="text-center text-sm text-zinc-500">
@@ -78,7 +88,7 @@ export default function LoginPage() {
             </Link>
           </p>
         </form>
-      </CardBody>
+      </CardContent>
     </Card>
   );
 }

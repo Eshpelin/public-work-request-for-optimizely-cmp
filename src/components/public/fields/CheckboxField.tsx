@@ -1,6 +1,7 @@
 "use client";
 
-import { Checkbox } from "@heroui/react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import type { FieldProps } from "./types";
 
 export default function CheckboxField({
@@ -17,8 +18,8 @@ export default function CheckboxField({
 
   const selected = Array.isArray(value) ? (value as string[]) : [];
 
-  const handleToggle = (choiceId: string, isChecked: boolean) => {
-    if (isChecked) {
+  const handleToggle = (choiceId: string, checked: boolean) => {
+    if (checked) {
       onChange([...selected, choiceId]);
     } else {
       onChange(selected.filter((id) => id !== choiceId));
@@ -26,23 +27,26 @@ export default function CheckboxField({
   };
 
   return (
-    <div className="w-full">
-      <label className="text-sm font-medium mb-2 block">
+    <div className="w-full space-y-2">
+      <Label className="text-sm font-medium">
         {field.label}
-        {field.is_required && <span className="text-danger ml-1">*</span>}
-      </label>
+        {field.is_required && <span className="text-destructive ml-1">*</span>}
+      </Label>
       <div className="flex flex-col gap-2">
         {visibleChoices.map((choice) => (
-          <Checkbox
-            key={choice.id}
-            isSelected={selected.includes(choice.id)}
-            onValueChange={(isChecked) => handleToggle(choice.id, isChecked)}
-          >
-            {choice.name}
-          </Checkbox>
+          <div key={choice.id} className="flex items-center space-x-2">
+            <Checkbox
+              id={`${field.identifier}-${choice.id}`}
+              checked={selected.includes(choice.id)}
+              onCheckedChange={(checked) => handleToggle(choice.id, !!checked)}
+            />
+            <Label htmlFor={`${field.identifier}-${choice.id}`} className="font-normal">
+              {choice.name}
+            </Label>
+          </div>
         ))}
       </div>
-      {error && <p className="text-danger text-xs mt-1">{error}</p>}
+      {error && <p className="text-destructive text-xs mt-1">{error}</p>}
     </div>
   );
 }

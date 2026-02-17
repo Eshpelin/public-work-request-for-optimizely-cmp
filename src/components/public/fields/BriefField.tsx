@@ -1,28 +1,26 @@
 "use client";
 
-import { Textarea } from "@heroui/react";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import type { FieldProps } from "./types";
 
 export default function BriefField({ field, value, onChange, error }: FieldProps) {
   return (
-    <div className="w-full">
+    <div className="w-full space-y-2">
+      <Label htmlFor={field.identifier} className="text-sm font-medium">
+        {field.label}
+        {field.is_required && <span className="text-destructive ml-1">*</span>}
+      </Label>
       <Textarea
-        label={
-          <>
-            {field.label}
-            {field.is_required && <span className="text-danger ml-1">*</span>}
-          </>
-        }
+        id={field.identifier}
         placeholder={field.helper_text || "Enter brief details"}
         value={(value as string) ?? ""}
-        onValueChange={(val) => onChange(val)}
-        isInvalid={!!error}
-        errorMessage={error}
-        variant="bordered"
-        minRows={6}
-        classNames={{ label: "text-sm font-medium" }}
-        description="Supports HTML formatting"
+        onChange={(e) => onChange(e.target.value)}
+        rows={6}
+        className={error ? "border-destructive" : ""}
       />
+      <p className="text-xs text-muted-foreground">Supports HTML formatting</p>
+      {error && <p className="text-destructive text-xs">{error}</p>}
     </div>
   );
 }

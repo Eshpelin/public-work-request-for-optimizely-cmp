@@ -1,6 +1,13 @@
 "use client";
 
-import { Select, SelectItem } from "@heroui/react";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import type { FieldProps } from "./types";
 
 export default function DropdownField({
@@ -16,45 +23,62 @@ export default function DropdownField({
     ? choices.filter((c) => filteredChoiceIds.includes(c.id))
     : choices;
 
-  const handleSelectionChange = (keys: "all" | Set<React.Key>) => {
-    if (keys === "all") {
-      onChange(visibleChoices.map((c) => c.id));
-      return;
-    }
-    const selected = Array.from(keys);
-    if (isMulti) {
-      onChange(selected);
-    } else {
-      onChange(selected[0] ?? "");
-    }
-  };
+  if (isMulti) {
+    // shadcn Select does not support multi-select natively.
+    // Fall back to a checkbox-style multi-select using native select.
+    const selected = Array.isArray(value) ? (value as string[]) : [];
 
-  const selectedKeys = isMulti
-    ? new Set(Array.isArray(value) ? (value as string[]) : [])
-    : new Set(value ? [value as string] : []);
+    const handleMultiChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const opts = Array.from(e.target.selectedOptions, (o) => o.value);
+      onChange(opts);
+    };
+
+    return (
+      <div className="w-full space-y-2">
+        <Label htmlFor={field.identifier} className="text-sm font-medium">
+          {field.label}
+          {field.is_required && <span className="text-destructive ml-1">*</span>}
+        </Label>
+        <select
+          id={field.identifier}
+          multiple
+          value={selected}
+          onChange={handleMultiChange}
+          className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+        >
+          {visibleChoices.map((choice) => (
+            <option key={choice.id} value={choice.id}>
+              {choice.name}
+            </option>
+          ))}
+        </select>
+        {error && <p className="text-destructive text-xs mt-1">{error}</p>}
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-2">
+      <Label htmlFor={field.identifier} className="text-sm font-medium">
+        {field.label}
+        {field.is_required && <span className="text-destructive ml-1">*</span>}
+      </Label>
       <Select
-        label={
-          <>
-            {field.label}
-            {field.is_required && <span className="text-danger ml-1">*</span>}
-          </>
-        }
-        placeholder={field.helper_text || `Select ${field.label}`}
-        selectionMode={isMulti ? "multiple" : "single"}
-        selectedKeys={selectedKeys}
-        onSelectionChange={handleSelectionChange}
-        isInvalid={!!error}
-        errorMessage={error}
-        variant="bordered"
-        classNames={{ label: "text-sm font-medium" }}
+        value={(value as string) ?? ""}
+        onValueChange={(val) => onChange(val)}
       >
-        {visibleChoices.map((choice) => (
-          <SelectItem key={choice.id}>{choice.name}</SelectItem>
-        ))}
+        <SelectTrigger id={field.identifier} className={`w-full ${error ? "border-destructive" : ""}`}>
+          <SelectValue placeholder={field.helper_text || `Select ${field.label}`} />
+        </SelectTrigger>
+        <SelectContent>
+          {visibleChoices.map((choice) => (
+            <SelectItem key={choice.id} value={choice.id}>
+              {choice.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
       </Select>
+      {error && <p className="text-destructive text-xs">{error}</p>}
     </div>
   );
 }

@@ -2,17 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Spinner } from "@/components/ui/spinner";
 import {
-  Button,
   Table,
   TableHeader,
-  TableColumn,
+  TableHead,
   TableBody,
   TableRow,
   TableCell,
-  Chip,
-  Spinner,
-} from "@heroui/react";
+} from "@/components/ui/table";
 
 interface FormListItem {
   id: string;
@@ -71,8 +71,8 @@ export default function FormsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Public Forms</h1>
-        <Button as={Link} href="/forms/new" color="primary">
-          Create Form
+        <Button asChild>
+          <Link href="/forms/new">Create Form</Link>
         </Button>
       </div>
 
@@ -83,23 +83,24 @@ export default function FormsPage() {
           </p>
         </div>
       ) : (
-        <Table aria-label="Public forms list">
+        <Table>
           <TableHeader>
-            <TableColumn>Title</TableColumn>
-            <TableColumn>Template</TableColumn>
-            <TableColumn>Access Type</TableColumn>
-            <TableColumn>Status</TableColumn>
-            <TableColumn>URLs</TableColumn>
-            <TableColumn>Submissions</TableColumn>
-            <TableColumn>Created</TableColumn>
+            <TableRow>
+              <TableHead>Title</TableHead>
+              <TableHead>Template</TableHead>
+              <TableHead>Access Type</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>URLs</TableHead>
+              <TableHead>Submissions</TableHead>
+              <TableHead>Created</TableHead>
+            </TableRow>
           </TableHeader>
           <TableBody>
             {forms.map((form) => (
               <TableRow
                 key={form.id}
-                as={Link}
-                href={`/forms/${form.id}`}
                 className="cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                onClick={() => window.location.href = `/forms/${form.id}`}
               >
                 <TableCell className="font-medium">{form.title}</TableCell>
                 <TableCell>{form.cmpTemplateName}</TableCell>
@@ -109,13 +110,12 @@ export default function FormsPage() {
                     : "One-Time URL"}
                 </TableCell>
                 <TableCell>
-                  <Chip
-                    size="sm"
-                    color={form.isActive ? "success" : "default"}
-                    variant="flat"
+                  <Badge
+                    variant={form.isActive ? "default" : "secondary"}
+                    className={form.isActive ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400" : ""}
                   >
                     {form.isActive ? "Active" : "Inactive"}
-                  </Chip>
+                  </Badge>
                 </TableCell>
                 <TableCell>{form._count.formUrls}</TableCell>
                 <TableCell>{form._count.submissions}</TableCell>

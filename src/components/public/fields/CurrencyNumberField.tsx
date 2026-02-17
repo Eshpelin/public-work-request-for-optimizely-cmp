@@ -1,6 +1,7 @@
 "use client";
 
-import { Input } from "@heroui/react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { FieldProps } from "./types";
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -19,29 +20,30 @@ export default function CurrencyNumberField({ field, value, onChange, error }: F
   const step = decimalPlaces > 0 ? 1 / Math.pow(10, decimalPlaces) : 1;
 
   return (
-    <div className="w-full">
-      <Input
-        type="number"
-        label={
-          <>
-            {field.label}
-            {field.is_required && <span className="text-danger ml-1">*</span>}
-          </>
-        }
-        placeholder={field.helper_text || "0.00"}
-        value={value != null ? String(value) : ""}
-        onValueChange={(val) => {
-          const parsed = parseFloat(val);
-          onChange(isNaN(parsed) ? "" : parsed);
-        }}
-        min={0}
-        step={step}
-        startContent={<span className="text-default-400 text-sm">{symbol}</span>}
-        isInvalid={!!error}
-        errorMessage={error}
-        variant="bordered"
-        classNames={{ label: "text-sm font-medium" }}
-      />
+    <div className="w-full space-y-2">
+      <Label htmlFor={field.identifier} className="text-sm font-medium">
+        {field.label}
+        {field.is_required && <span className="text-destructive ml-1">*</span>}
+      </Label>
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+          {symbol}
+        </span>
+        <Input
+          id={field.identifier}
+          type="number"
+          placeholder={field.helper_text || "0.00"}
+          value={value != null ? String(value) : ""}
+          onChange={(e) => {
+            const parsed = parseFloat(e.target.value);
+            onChange(isNaN(parsed) ? "" : parsed);
+          }}
+          min={0}
+          step={step}
+          className={`pl-8 ${error ? "border-destructive" : ""}`}
+        />
+      </div>
+      {error && <p className="text-destructive text-xs">{error}</p>}
     </div>
   );
 }
