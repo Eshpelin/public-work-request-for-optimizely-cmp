@@ -27,14 +27,14 @@ export async function GET(
 
     const { formId } = await params;
 
+    const urlPage = Math.max(1, parseInt(request.nextUrl.searchParams.get("urlPage") ?? "1", 10) || 1);
+    const urlPageSize = Math.min(100, Math.max(1, parseInt(request.nextUrl.searchParams.get("urlPageSize") ?? "20", 10) || 20));
+
     const form = await prisma.publicForm.findUnique({
       where: { id: formId },
       include: {
         createdBy: {
           select: { id: true, email: true, name: true },
-        },
-        formUrls: {
-          orderBy: { createdAt: "desc" },
         },
         _count: {
           select: {
@@ -48,9 +48,24 @@ export async function GET(
       throw new AppError("Form not found", 404, ErrorCode.NOT_FOUND, requestId);
     }
 
+    const [formUrls, totalUrls] = await Promise.all([
+      prisma.formUrl.findMany({
+        where: { formId },
+        orderBy: { createdAt: "desc" },
+        skip: (urlPage - 1) * urlPageSize,
+        take: urlPageSize,
+      }),
+      prisma.formUrl.count({ where: { formId } }),
+    ]);
+
+    const totalUrlPages = Math.ceil(totalUrls / urlPageSize);
+
     logger.info({ requestId, userId: user.sub, formId }, "Fetched form details");
 
-    return NextResponse.json({ form });
+    return NextResponse.json({
+      form: { ...form, formUrls },
+      urlPagination: { page: urlPage, pageSize: urlPageSize, total: totalUrls, totalPages: totalUrlPages },
+    });
   } catch (error) {
     if (error instanceof AppError) {
       logger.warn({ requestId, error: error.message }, "Failed to fetch form");

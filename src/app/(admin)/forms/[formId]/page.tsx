@@ -23,6 +23,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Pagination } from "@/components/ui/pagination";
 
 interface FormUrl {
   id: string;
@@ -39,6 +40,13 @@ interface Submission {
   cmpWorkRequestId: string | null;
   errorMessage: string | null;
   submittedAt: string;
+}
+
+interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
 }
 
 interface FormDetail {
@@ -118,6 +126,12 @@ export default function FormDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Pagination state
+  const [urlPage, setUrlPage] = useState(1);
+  const [urlPagination, setUrlPagination] = useState<PaginationMeta | null>(null);
+  const [submissionPage, setSubmissionPage] = useState(1);
+  const [submissionPagination, setSubmissionPagination] = useState<PaginationMeta | null>(null);
+
   // URL generation state
   const [modalOpen, setModalOpen] = useState(false);
   const [urlCount, setUrlCount] = useState("1");
@@ -127,25 +141,27 @@ export default function FormDetailPage() {
 
   const fetchForm = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/forms/${formId}`);
+      const res = await fetch(`/api/v1/forms/${formId}?urlPage=${urlPage}&urlPageSize=20`);
       if (!res.ok) throw new Error("Failed to fetch form details");
       const data = await res.json();
       setForm(data.form);
+      if (data.urlPagination) setUrlPagination(data.urlPagination);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     }
-  }, [formId]);
+  }, [formId, urlPage]);
 
   const fetchSubmissions = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/forms/${formId}/submissions`);
+      const res = await fetch(`/api/v1/forms/${formId}/submissions?page=${submissionPage}&pageSize=20`);
       if (!res.ok) throw new Error("Failed to fetch submissions");
       const data = await res.json();
       setSubmissions(data.submissions ?? []);
+      if (data.pagination) setSubmissionPagination(data.pagination);
     } catch {
       // Non-critical, submissions list may just be empty.
     }
-  }, [formId]);
+  }, [formId, submissionPage]);
 
   useEffect(() => {
     async function load() {
@@ -344,6 +360,13 @@ export default function FormDetailPage() {
             </TableBody>
           </Table>
         )}
+        {urlPagination && (
+          <Pagination
+            page={urlPagination.page}
+            totalPages={urlPagination.totalPages}
+            onPageChange={setUrlPage}
+          />
+        )}
       </div>
 
       {/* One-Time URL Generation Dialog */}
@@ -444,6 +467,13 @@ export default function FormDetailPage() {
               ))}
             </TableBody>
           </Table>
+        )}
+        {submissionPagination && (
+          <Pagination
+            page={submissionPagination.page}
+            totalPages={submissionPagination.totalPages}
+            onPageChange={setSubmissionPage}
+          />
         )}
       </div>
     </div>

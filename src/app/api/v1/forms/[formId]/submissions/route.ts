@@ -26,25 +26,38 @@ export async function GET(
       throw new AppError("Form not found", 404, ErrorCode.NOT_FOUND, requestId);
     }
 
-    const submissions = await prisma.submission.findMany({
-      where: { formId },
-      orderBy: { submittedAt: "desc" },
-      select: {
-        id: true,
-        status: true,
-        cmpWorkRequestId: true,
-        submittedAt: true,
-        errorMessage: true,
-        retryCount: true,
-      },
-    });
+    const page = Math.max(1, parseInt(request.nextUrl.searchParams.get("page") ?? "1", 10) || 1);
+    const pageSize = Math.min(100, Math.max(1, parseInt(request.nextUrl.searchParams.get("pageSize") ?? "20", 10) || 20));
+
+    const [submissions, total] = await Promise.all([
+      prisma.submission.findMany({
+        where: { formId },
+        orderBy: { submittedAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        select: {
+          id: true,
+          status: true,
+          cmpWorkRequestId: true,
+          submittedAt: true,
+          errorMessage: true,
+          retryCount: true,
+        },
+      }),
+      prisma.submission.count({ where: { formId } }),
+    ]);
+
+    const totalPages = Math.ceil(total / pageSize);
 
     logger.info(
       { requestId, userId: user.sub, formId },
       "Fetched form submissions"
     );
 
-    return NextResponse.json({ submissions });
+    return NextResponse.json({
+      submissions,
+      pagination: { page, pageSize, total, totalPages },
+    });
   } catch (error) {
     if (error instanceof AppError) {
       logger.warn({ requestId, error: error.message }, "Failed to fetch submissions");
