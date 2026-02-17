@@ -148,7 +148,10 @@ export class CmpClient {
 
   /**
    * Uploads a file attachment to an existing work request.
-   * The file is sent as multipart/form-data.
+   * Uses the 3-step CMP upload flow:
+   * 1. GET /v3/upload-url for a pre-signed URL and key
+   * 2. POST file to the pre-signed URL
+   * 3. POST key and name to the attachments endpoint
    */
   async uploadAttachment(
     workRequestId: string,
@@ -156,17 +159,16 @@ export class CmpClient {
     fileBuffer: Buffer,
     contentType: string
   ): Promise<void> {
-    await this.uploadFile(
-      `/v3/work-requests/${workRequestId}/attachments`,
-      fileName,
-      fileBuffer,
-      contentType
-    );
+    const key = await this.uploadToPresignedUrl(fileName, fileBuffer, contentType);
+    await this.request("POST", `/v3/work-requests/${workRequestId}/attachments`, {
+      key,
+      name: fileName,
+    });
   }
 
   /**
    * Uploads a creative asset to an existing work request.
-   * The file is sent as multipart/form-data.
+   * Uses the same 3-step CMP upload flow as attachments.
    */
   async uploadCreativeAsset(
     workRequestId: string,
@@ -174,58 +176,54 @@ export class CmpClient {
     fileBuffer: Buffer,
     contentType: string
   ): Promise<void> {
-    await this.uploadFile(
-      `/v3/work-requests/${workRequestId}/creative-assets`,
-      fileName,
-      fileBuffer,
-      contentType
-    );
+    const key = await this.uploadToPresignedUrl(fileName, fileBuffer, contentType);
+    await this.request("POST", `/v3/work-requests/${workRequestId}/creative-assets`, {
+      key,
+      name: fileName,
+    });
   }
 
   /**
-   * Shared helper for uploading files via multipart/form-data.
-   * Constructs a FormData payload and sends it with authentication.
-   * Retries once on 401 just like the standard request method.
+   * Handles steps 1 and 2 of the CMP upload flow.
+   * Fetches a pre-signed upload URL, uploads the file to it,
+   * and returns the key for use in step 3.
    */
-  private async uploadFile(
-    path: string,
+  private async uploadToPresignedUrl(
     fileName: string,
     fileBuffer: Buffer,
     contentType: string
-  ): Promise<void> {
-    const buildFormData = (): FormData => {
-      const formData = new FormData();
-      const blob = new Blob([new Uint8Array(fileBuffer)], { type: contentType });
-      formData.append("file", blob, fileName);
-      return formData;
-    };
+  ): Promise<string> {
+    // Step 1: Get the pre-signed upload URL and metadata fields.
+    const uploadInfo = await this.request<{
+      url: string;
+      upload_meta_fields: Record<string, string>;
+    }>("GET", "/v3/upload-url");
 
-    const attempt = async (): Promise<Response> => {
-      const token = await this.tokenManager.getToken();
-      const formData = buildFormData();
+    const presignedUrl = uploadInfo.url;
+    const metaFields = uploadInfo.upload_meta_fields;
+    const key = metaFields.key;
 
-      return fetch(`${BASE_URL}${path}`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-    };
-
-    let response = await attempt();
-
-    // Retry once on 401 with a fresh token.
-    if (response.status === 401) {
-      this.tokenManager.invalidate();
-      response = await attempt();
+    // Step 2: Upload the file to the pre-signed URL.
+    // Meta fields must come before the file field in the form data.
+    const formData = new FormData();
+    for (const [fieldName, fieldValue] of Object.entries(metaFields)) {
+      formData.append(fieldName, fieldValue);
     }
+    const blob = new Blob([new Uint8Array(fileBuffer)], { type: contentType });
+    formData.append("file", blob, fileName);
 
-    if (!response.ok) {
-      const errorText = await response.text();
+    const uploadResponse = await fetch(presignedUrl, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!uploadResponse.ok && uploadResponse.status !== 204) {
+      const errorText = await uploadResponse.text();
       throw new Error(
-        `CMP API file upload error. POST ${path} returned ${response.status}. ${errorText}`
+        `CMP file upload to pre-signed URL failed with ${uploadResponse.status}. ${errorText}`
       );
     }
+
+    return key;
   }
 }
