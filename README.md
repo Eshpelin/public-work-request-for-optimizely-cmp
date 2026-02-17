@@ -19,16 +19,16 @@ Guest Browser  -->  Next.js App  -->  Optimizely CMP API
 1. An admin logs in, connects their CMP credentials, and creates a public form by selecting a CMP template
 2. The app generates a shareable URL (permanent or single-use)
 3. A guest opens the URL, fills out the form, and submits
-4. The app saves the submission to the database immediately and returns a confirmation
-5. In the background, the app creates a Work Request in CMP via the API
-6. If the CMP call fails, automatic retries with exponential backoff handle transient errors
+4. The app validates and saves the submission, then creates a Work Request in CMP synchronously
+5. The guest sees a success page or the actual CMP error if something goes wrong
+6. If the CMP call fails, the submission is saved with FAILED status for automatic retry with exponential backoff
 
 ## Features
 
 **Admin Panel**
 - Local email/password authentication (no CMP login required for admins)
 - CMP credential management with AES-256-GCM encryption at rest
-- Form creation wizard with template and workflow selection
+- Form creation wizard with CMP template selection
 - Two access modes. permanent open URLs or single-use URLs with optional expiry
 - Bulk URL generation (up to 500 per batch)
 - Submission monitoring with status tracking
@@ -41,14 +41,14 @@ Guest Browser  -->  Next.js App  -->  Optimizely CMP API
 - Rate limiting on public endpoints
 
 **Reliability**
-- Fire-and-forget submission pattern. guests get instant confirmation regardless of CMP availability
-- Exponential backoff retry (1 min, 5 min, 15 min, 1 hr, 4 hr, max 5 attempts)
+- Synchronous CMP submission so guests see real errors instead of false confirmations
+- Exponential backoff retry for failed submissions (1 min, 5 min, 15 min, 1 hr, 4 hr, max 5 attempts)
 - Background cron jobs for retry processing and data cleanup
 - Health check endpoint for monitoring
 
 ## Tech Stack
 
-- **Frontend.** Next.js 16 (App Router), React 19, HeroUI, Tailwind CSS v4
+- **Frontend.** Next.js 16 (App Router), React 19, shadcn/ui (Radix UI), Tailwind CSS v4
 - **Backend.** Next.js API Routes, Prisma ORM, PostgreSQL 16
 - **Security.** bcrypt, JWT (httpOnly cookies), AES-256-GCM, jose
 - **Tooling.** Zod validation, Pino logging, node-cron
@@ -139,7 +139,7 @@ After the application is running.
 
 1. Navigate to `/register` and create your admin account. Registration locks after the first account is created.
 2. Log in and go to **Settings** to add your CMP API credentials (Client ID and Client Secret from Optimizely).
-3. Go to **Forms** and click **Create Form**. Select a CMP template, configure the title and access type, and optionally assign a workflow.
+3. Go to **Forms** and click **Create Form**. Select a CMP template, configure the title and access type.
 4. Share the generated URL with your intended audience.
 
 ## Project Structure
@@ -155,7 +155,7 @@ src/
     f/[token]/                 Public form and success pages
     api/
       v1/auth/                 Login, register, logout
-      v1/cmp/                  CMP proxy (templates, workflows)
+      v1/cmp/                  CMP proxy (templates)
       v1/forms/                Form CRUD, URL generation, submissions
       v1/public/               Public form fetch, submission
       v1/internal/             Retry and cleanup jobs
@@ -200,7 +200,7 @@ Two cron jobs run inside the application process via `node-cron`.
 - `POST /api/v1/forms/[formId]/urls` for generating shareable URLs
 - `GET /api/v1/forms/[formId]/submissions` for viewing submissions
 - `GET/POST/PATCH /api/v1/settings/credentials` for CMP credentials
-- `GET /api/v1/cmp/templates` and `/workflows` for CMP data proxy
+- `GET /api/v1/cmp/templates` for CMP template proxy
 
 **Public routes** (rate limited, no authentication).
 - `GET /api/v1/public/forms/[token]` fetches the form configuration (30 req/min/IP)
@@ -210,6 +210,26 @@ Two cron jobs run inside the application process via `node-cron`.
 - `POST /api/v1/internal/retry-submissions`
 - `POST /api/v1/internal/cleanup`
 - `GET /api/health`
+
+## CMP API Field Serialization
+
+Each CMP form field type has a specific serialization format for the `POST /v3/work-requests` endpoint.
+
+| Field Type | `values` Format |
+|------------|----------------|
+| `text`, `text_area` | `["plain string"]` |
+| `brief`, `richtext` | `[{"type": "text_brief", "value": "<html>"}]` |
+| `dropdown`, `label`, `radio_button` | `["choice_id"]` (single) or `["id1", "id2"]` (multi) |
+| `checkbox` | `["choice_id_1", "choice_id_2"]` |
+| `date` | `["2026-02-18T00:00:00Z"]` (ISO with timezone) |
+| `percentage_number`, `currency_number` | `["42"]` (string, not number) |
+| `file`, `instruction`, `section` | Skipped (not serialized) |
+
+File uploads use the CMP 3-step presigned URL flow.
+
+1. `GET /v3/upload-url` to obtain a presigned S3 URL and upload meta fields
+2. `POST` the file to the presigned URL as `multipart/form-data` with meta fields before the file
+3. `POST` JSON `{"key": "...", "name": "filename.ext"}` to `/v3/work-requests/{id}/attachments`
 
 ## Security
 
