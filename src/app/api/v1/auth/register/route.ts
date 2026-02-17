@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { hashPassword, createToken } from "@/lib/security/auth";
+import { generateCsrfToken, setCsrfCookie } from "@/lib/security/csrf";
 import { AppError, ErrorCode, formatErrorResponse } from "@/lib/errors";
 import logger from "@/lib/logging/logger";
 import { logAudit } from "@/lib/audit";
@@ -62,6 +63,9 @@ export async function POST(request: NextRequest) {
       path: "/",
       maxAge: 86400,
     });
+
+    const csrfToken = generateCsrfToken();
+    setCsrfCookie(response, csrfToken);
 
     logger.info({ requestId, userId: user.id }, "Admin user registered");
 

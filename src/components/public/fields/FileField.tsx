@@ -43,8 +43,8 @@ export default function FileField({ field, value, onChange, error }: FieldProps)
   return (
     <div className="w-full">
       <label className="text-sm font-medium mb-1 block">
-        {field.name}
-        {field.required && <span className="text-danger ml-1">*</span>}
+        {field.label}
+        {field.is_required && <span className="text-danger ml-1">*</span>}
       </label>
       <div
         role="button"
@@ -80,8 +80,8 @@ export default function FileField({ field, value, onChange, error }: FieldProps)
           ))}
         </div>
       )}
-      {field.description && (
-        <p className="text-default-400 text-xs mt-1">{field.description}</p>
+      {field.helper_text && (
+        <p className="text-default-400 text-xs mt-1">{field.helper_text}</p>
       )}
       {error && <p className="text-danger text-xs mt-1">{error}</p>}
     </div>

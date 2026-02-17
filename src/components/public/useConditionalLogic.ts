@@ -43,7 +43,7 @@ export function computeConditionalLogic(
   const visibleFields = new Set<string>(allIdentifiers);
   const filteredChoices: Record<string, string[]> = {};
 
-  const sortedFields = [...fields].sort((a, b) => a.order - b.order);
+  const sortedFields = [...fields].sort((a, b) => a.sort_order - b.sort_order);
 
   for (const field of sortedFields) {
     if (!field.logic_rules || field.logic_rules.length === 0) {

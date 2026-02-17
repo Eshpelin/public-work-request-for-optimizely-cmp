@@ -28,14 +28,14 @@ export function validateField(
   field: CmpFormField,
   value: unknown,
 ): string | null {
-  const { type, required } = field;
+  const { type, is_required } = field;
 
   switch (type) {
     case "text":
     case "text_area": {
-      if (required) {
+      if (is_required) {
         if (typeof value !== "string" || value.trim() === "") {
-          return `${field.name} is required.`;
+          return `${field.label} is required.`;
         }
       }
       return null;
@@ -43,24 +43,24 @@ export function validateField(
 
     case "richtext":
     case "brief": {
-      if (required) {
+      if (is_required) {
         if (typeof value !== "string" || stripHtmlTags(value) === "") {
-          return `${field.name} is required.`;
+          return `${field.label} is required.`;
         }
       }
       return null;
     }
 
     case "checkbox": {
-      if (required) {
+      if (is_required) {
         if (!Array.isArray(value) || value.length === 0) {
-          return `${field.name} requires at least one selection.`;
+          return `${field.label} requires at least one selection.`;
         }
       }
       if (Array.isArray(value)) {
         for (const id of value) {
           if (typeof id !== "string" || !isValidChoiceId(field, id)) {
-            return `${field.name} contains an invalid selection.`;
+            return `${field.label} contains an invalid selection.`;
           }
         }
       }
@@ -68,14 +68,14 @@ export function validateField(
     }
 
     case "radio_button": {
-      if (required) {
+      if (is_required) {
         if (typeof value !== "string" || value === "") {
-          return `${field.name} is required.`;
+          return `${field.label} is required.`;
         }
       }
       if (typeof value === "string" && value !== "") {
         if (!isValidChoiceId(field, value)) {
-          return `${field.name} contains an invalid selection.`;
+          return `${field.label} contains an invalid selection.`;
         }
       }
       return null;
@@ -86,27 +86,27 @@ export function validateField(
       const isMulti = field.type_specific_meta?.is_multi_select === true;
 
       if (isMulti) {
-        if (required) {
+        if (is_required) {
           if (!Array.isArray(value) || value.length === 0) {
-            return `${field.name} requires at least one selection.`;
+            return `${field.label} requires at least one selection.`;
           }
         }
         if (Array.isArray(value)) {
           for (const id of value) {
             if (typeof id !== "string" || !isValidChoiceId(field, id)) {
-              return `${field.name} contains an invalid selection.`;
+              return `${field.label} contains an invalid selection.`;
             }
           }
         }
       } else {
-        if (required) {
+        if (is_required) {
           if (typeof value !== "string" || value === "") {
-            return `${field.name} is required.`;
+            return `${field.label} is required.`;
           }
         }
         if (typeof value === "string" && value !== "") {
           if (!isValidChoiceId(field, value)) {
-            return `${field.name} contains an invalid selection.`;
+            return `${field.label} contains an invalid selection.`;
           }
         }
       }
@@ -114,52 +114,52 @@ export function validateField(
     }
 
     case "date": {
-      if (required) {
+      if (is_required) {
         if (typeof value !== "string" || value.trim() === "") {
-          return `${field.name} is required.`;
+          return `${field.label} is required.`;
         }
       }
       if (typeof value === "string" && value.trim() !== "") {
         const parsed = new Date(value);
         if (isNaN(parsed.getTime())) {
-          return `${field.name} must be a valid date.`;
+          return `${field.label} must be a valid date.`;
         }
       }
       return null;
     }
 
     case "file": {
-      if (required) {
+      if (is_required) {
         if (!value) {
-          return `${field.name} is required.`;
+          return `${field.label} is required.`;
         }
       }
       return null;
     }
 
     case "percentage_number": {
-      if (required) {
+      if (is_required) {
         if (typeof value !== "number" || isNaN(value)) {
-          return `${field.name} is required.`;
+          return `${field.label} is required.`;
         }
       }
       if (typeof value === "number" && !isNaN(value)) {
         if (value < 0 || value > 100) {
-          return `${field.name} must be between 0 and 100.`;
+          return `${field.label} must be between 0 and 100.`;
         }
       }
       return null;
     }
 
     case "currency_number": {
-      if (required) {
+      if (is_required) {
         if (typeof value !== "number" || isNaN(value)) {
-          return `${field.name} is required.`;
+          return `${field.label} is required.`;
         }
       }
       if (typeof value === "number" && !isNaN(value)) {
         if (value < 0) {
-          return `${field.name} must be 0 or greater.`;
+          return `${field.label} must be 0 or greater.`;
         }
       }
       return null;

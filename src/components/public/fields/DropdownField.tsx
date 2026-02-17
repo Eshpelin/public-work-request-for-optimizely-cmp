@@ -38,11 +38,11 @@ export default function DropdownField({
       <Select
         label={
           <>
-            {field.name}
-            {field.required && <span className="text-danger ml-1">*</span>}
+            {field.label}
+            {field.is_required && <span className="text-danger ml-1">*</span>}
           </>
         }
-        placeholder={field.description || `Select ${field.name}`}
+        placeholder={field.helper_text || `Select ${field.label}`}
         selectionMode={isMulti ? "multiple" : "single"}
         selectedKeys={selectedKeys}
         onSelectionChange={handleSelectionChange}

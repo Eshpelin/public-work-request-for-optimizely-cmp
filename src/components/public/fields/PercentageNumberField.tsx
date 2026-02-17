@@ -13,11 +13,11 @@ export default function PercentageNumberField({ field, value, onChange, error }:
         type="number"
         label={
           <>
-            {field.name}
-            {field.required && <span className="text-danger ml-1">*</span>}
+            {field.label}
+            {field.is_required && <span className="text-danger ml-1">*</span>}
           </>
         }
-        placeholder={field.description || "0"}
+        placeholder={field.helper_text || "0"}
         value={value != null ? String(value) : ""}
         onValueChange={(val) => {
           const parsed = parseFloat(val);

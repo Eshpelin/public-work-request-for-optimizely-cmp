@@ -28,8 +28,8 @@ export default function CheckboxField({
   return (
     <div className="w-full">
       <label className="text-sm font-medium mb-2 block">
-        {field.name}
-        {field.required && <span className="text-danger ml-1">*</span>}
+        {field.label}
+        {field.is_required && <span className="text-danger ml-1">*</span>}
       </label>
       <div className="flex flex-col gap-2">
         {visibleChoices.map((choice) => (

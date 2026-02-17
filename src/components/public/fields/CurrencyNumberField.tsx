@@ -24,11 +24,11 @@ export default function CurrencyNumberField({ field, value, onChange, error }: F
         type="number"
         label={
           <>
-            {field.name}
-            {field.required && <span className="text-danger ml-1">*</span>}
+            {field.label}
+            {field.is_required && <span className="text-danger ml-1">*</span>}
           </>
         }
-        placeholder={field.description || "0.00"}
+        placeholder={field.helper_text || "0.00"}
         value={value != null ? String(value) : ""}
         onValueChange={(val) => {
           const parsed = parseFloat(val);

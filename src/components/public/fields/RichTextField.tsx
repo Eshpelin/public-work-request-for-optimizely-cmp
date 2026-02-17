@@ -9,11 +9,11 @@ export default function RichTextField({ field, value, onChange, error }: FieldPr
       <Textarea
         label={
           <>
-            {field.name}
-            {field.required && <span className="text-danger ml-1">*</span>}
+            {field.label}
+            {field.is_required && <span className="text-danger ml-1">*</span>}
           </>
         }
-        placeholder={field.description || `Enter ${field.name}`}
+        placeholder={field.helper_text || `Enter ${field.label}`}
         value={(value as string) ?? ""}
         onValueChange={(val) => onChange(val)}
         isInvalid={!!error}

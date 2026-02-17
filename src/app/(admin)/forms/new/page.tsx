@@ -18,13 +18,14 @@ import {
 
 interface Template {
   id: string;
-  name: string;
+  title: string;
   description?: string;
 }
 
 interface Workflow {
   id: string;
-  name: string;
+  title?: string;
+  name?: string;
   description?: string;
 }
 
@@ -92,7 +93,7 @@ export default function NewFormPage() {
 
   const handleSelectTemplate = (template: Template) => {
     setSelectedTemplate(template);
-    setTitle(template.name);
+    setTitle(template.title || "");
   };
 
   const handleNext = () => {
@@ -190,8 +191,8 @@ export default function NewFormPage() {
             </div>
           ) : templates.length === 0 ? (
             <p className="text-zinc-500 dark:text-zinc-400 py-12 text-center">
-              No templates available. Please configure your CMP credentials
-              first.
+              No templates found. Check that your CMP credentials are configured
+              in Settings and that your CMP instance has active templates.
             </p>
           ) : (
             <div className="flex flex-col gap-3">
@@ -207,7 +208,7 @@ export default function NewFormPage() {
                   }`}
                 >
                   <CardBody className="px-4 py-3">
-                    <p className="font-medium">{template.name}</p>
+                    <p className="font-medium">{template.title}</p>
                     {template.description && (
                       <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
                         {template.description}
@@ -278,7 +279,7 @@ export default function NewFormPage() {
                 }}
               >
                 {workflows.map((wf) => (
-                  <SelectItem key={wf.id}>{wf.name}</SelectItem>
+                  <SelectItem key={wf.id}>{wf.title || wf.name || wf.id}</SelectItem>
                 ))}
               </Select>
             ) : null}
@@ -291,7 +292,7 @@ export default function NewFormPage() {
             <Button
               color="primary"
               isLoading={submitting}
-              isDisabled={!title.trim()}
+              isDisabled={!(title ?? "").trim()}
               onPress={handleSubmit}
             >
               Create Form

@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       const workflows = await client.getWorkflows();
       const workflow = workflows.find((w) => w.id === parsed.cmpWorkflowId);
       if (workflow) {
-        cmpWorkflowName = workflow.name;
+        cmpWorkflowName = workflow.title || workflow.name || null;
       }
     }
 
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
         title: parsed.title,
         description: parsed.description,
         cmpTemplateId: parsed.cmpTemplateId,
-        cmpTemplateName: template.name,
+        cmpTemplateName: template.title,
         cmpWorkflowId: parsed.cmpWorkflowId,
         cmpWorkflowName,
         formFieldsSnapshot: template.form_fields as unknown as Prisma.InputJsonValue,

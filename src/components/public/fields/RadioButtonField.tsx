@@ -20,8 +20,8 @@ export default function RadioButtonField({
       <RadioGroup
         label={
           <>
-            {field.name}
-            {field.required && <span className="text-danger ml-1">*</span>}
+            {field.label}
+            {field.is_required && <span className="text-danger ml-1">*</span>}
           </>
         }
         value={(value as string) ?? ""}

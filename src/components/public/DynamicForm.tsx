@@ -97,7 +97,7 @@ export default function DynamicForm({ formConfig, token }: DynamicFormProps) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const fields = formConfig.fields.sort((a, b) => a.order - b.order);
+  const fields = formConfig.fields.sort((a, b) => a.sort_order - b.sort_order);
   const [state, dispatch] = useReducer(formReducer, fields, buildInitialState);
 
   const handleVisibilityChange = useCallback(

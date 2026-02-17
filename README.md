@@ -1,5 +1,7 @@
 # Public Work Request for Optimizely CMP
 
+> **This project is incomplete and actively being worked on. It is not an official Optimizely product and is not affiliated with or endorsed by Optimizely. Use at your own risk.**
+
 A self-hosted web application that lets admins expose Optimizely CMP Work Request forms as public URLs. Guests can fill out and submit these forms without needing CMP credentials. Submissions flow through to CMP as real Work Requests.
 
 ## Why This Exists

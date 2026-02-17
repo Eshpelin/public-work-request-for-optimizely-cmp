@@ -53,27 +53,34 @@ export interface CmpLogicRule {
 // A single field within a CMP form template.
 export interface CmpFormField {
   identifier: string;
-  name: string;
+  label: string;
   type: CmpFieldType;
-  required: boolean;
-  description?: string;
+  is_required: boolean;
+  helper_text?: string;
+  is_readonly?: boolean;
+  sort_order: number;
+  association_id?: string;
   type_specific_meta?: CmpTypeSpecificMeta | null;
   logic_rules?: CmpLogicRule[];
-  order: number;
 }
 
-// A CMP template containing form fields for work requests.
+// A CMP template as returned by the list endpoint (/v3/templates).
+// The detailed form_fields are only available when fetching a single template by ID.
 export interface CmpTemplate {
   id: string;
-  name: string;
+  title: string;
   description?: string;
-  form_fields: CmpFormField[];
+  is_active?: boolean;
+  applicable_to?: string[];
+  form_fields?: CmpFormField[];
+  links?: { self?: string };
 }
 
 // A CMP workflow that can be assigned to a work request.
 export interface CmpWorkflow {
   id: string;
-  name: string;
+  title?: string;
+  name?: string;
   description?: string;
 }
 

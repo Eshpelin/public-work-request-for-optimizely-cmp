@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const client = await getCmpClient();
     const templates = await client.getTemplates();
 
-    logger.info({ requestId, userId: user.sub }, "Fetched CMP templates");
+    logger.info({ requestId, userId: user.sub, templateCount: templates.length }, "Fetched CMP templates");
 
     return NextResponse.json({ templates });
   } catch (error) {
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    logger.error({ requestId, error }, "Unexpected error fetching templates");
+    logger.error({ requestId, error: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined }, "Unexpected error fetching templates");
     return NextResponse.json(formatErrorResponse(error, requestId), {
       status: 500,
     });

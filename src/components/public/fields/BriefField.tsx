@@ -9,11 +9,11 @@ export default function BriefField({ field, value, onChange, error }: FieldProps
       <Textarea
         label={
           <>
-            {field.name}
-            {field.required && <span className="text-danger ml-1">*</span>}
+            {field.label}
+            {field.is_required && <span className="text-danger ml-1">*</span>}
           </>
         }
-        placeholder={field.description || "Enter brief details"}
+        placeholder={field.helper_text || "Enter brief details"}
         value={(value as string) ?? ""}
         onValueChange={(val) => onChange(val)}
         isInvalid={!!error}

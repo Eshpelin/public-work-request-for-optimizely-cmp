@@ -9,11 +9,6 @@ import type { CmpTemplate, CmpWorkflow } from "@/types";
 
 const BASE_URL = "https://api.cmp.optimizely.com";
 
-interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-}
-
 export class CmpClient {
   private tokenManager: CmpTokenManager;
 
@@ -67,14 +62,62 @@ export class CmpClient {
   }
 
   /**
-   * Fetches all templates from the CMP API.
+   * Extracts the array of items from a CMP API response, which may use
+   * different wrapper keys depending on the endpoint.
+   */
+  private extractArray(resp: unknown): unknown[] {
+    if (Array.isArray(resp)) return resp;
+    if (resp && typeof resp === "object") {
+      const obj = resp as Record<string, unknown>;
+      if (Array.isArray(obj.data)) return obj.data;
+      if (Array.isArray(obj.items)) return obj.items;
+      if (Array.isArray(obj._embedded)) return obj._embedded;
+    }
+    return [];
+  }
+
+  /**
+   * Fetches all pages from a paginated CMP API endpoint.
+   * Reads the `pagination.next` link from each response to determine
+   * the next page URL. Stops when there is no next link.
+   */
+  private async fetchAllPages<T>(basePath: string): Promise<T[]> {
+    const allItems: T[] = [];
+    let path: string | null = basePath;
+
+    while (path) {
+      const resp = await this.request<Record<string, unknown>>("GET", path);
+      const items = this.extractArray(resp) as T[];
+      allItems.push(...items);
+
+      // Check for a next page link in the pagination object.
+      const pagination = resp.pagination as Record<string, unknown> | undefined;
+      const nextUrl = pagination?.next as string | undefined;
+
+      if (nextUrl) {
+        // The next URL may be absolute. Extract just the path portion.
+        try {
+          const url = new URL(nextUrl);
+          path = url.pathname + url.search;
+        } catch {
+          path = nextUrl;
+        }
+      } else {
+        path = null;
+      }
+
+      // Safety limit to prevent infinite loops.
+      if (allItems.length > 5000) break;
+    }
+
+    return allItems;
+  }
+
+  /**
+   * Fetches all templates from the CMP API, handling pagination.
    */
   async getTemplates(): Promise<CmpTemplate[]> {
-    const data = await this.request<PaginatedResponse<CmpTemplate>>(
-      "GET",
-      "/v3/templates"
-    );
-    return data.items;
+    return this.fetchAllPages<CmpTemplate>("/v3/templates");
   }
 
   /**
@@ -85,14 +128,10 @@ export class CmpClient {
   }
 
   /**
-   * Fetches all workflows from the CMP API.
+   * Fetches all workflows from the CMP API, handling pagination.
    */
   async getWorkflows(): Promise<CmpWorkflow[]> {
-    const data = await this.request<PaginatedResponse<CmpWorkflow>>(
-      "GET",
-      "/v3/workflows"
-    );
-    return data.items;
+    return this.fetchAllPages<CmpWorkflow>("/v3/workflows");
   }
 
   /**

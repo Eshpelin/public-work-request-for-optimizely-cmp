@@ -7,8 +7,8 @@ export default function InstructionField({ field }: FieldProps) {
 
   return (
     <div className="w-full rounded-medium bg-blue-50 border border-blue-200 p-4">
-      {field.name && (
-        <p className="text-sm font-semibold text-blue-800 mb-2">{field.name}</p>
+      {field.label && (
+        <p className="text-sm font-semibold text-blue-800 mb-2">{field.label}</p>
       )}
       {html && (
         <div
