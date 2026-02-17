@@ -106,7 +106,7 @@ npm run dev
 
 6. Open `http://localhost:3000/register` to create the first admin account.
 
-### Docker Deployment
+### Docker Deployment (localhost)
 
 1. Create your `.env` file with production values (see above).
 
@@ -122,6 +122,70 @@ This starts three containers.
 - **app** Next.js application on port 3000
 
 3. Visit `http://localhost:3000/register` to set up the first admin.
+
+### Deploying to Your Own Domain
+
+The application is a standard Docker image that can run anywhere containers are supported. The key requirement is setting `APP_URL` to your public domain so that generated form URLs point to the right place.
+
+**With a VPS or dedicated server (e.g. AWS EC2, DigitalOcean, Hetzner)**
+
+1. Set up a server with Docker installed.
+
+2. Clone the repository and create your `.env` file.
+
+```bash
+APP_URL=https://forms.yourdomain.com
+DATABASE_URL=postgresql://user:pass@db:5432/public_work_request?schema=public
+ENCRYPTION_KEY=<generate with the command above>
+JWT_SECRET=<generate with the command above>
+NODE_ENV=production
+```
+
+3. Update `docker-compose.yml` to set `APP_URL` to your domain.
+
+```yaml
+app:
+  environment:
+    APP_URL: "https://forms.yourdomain.com"
+```
+
+4. Run `docker compose up -d` to start the application on port 3000.
+
+5. Put a reverse proxy (Nginx, Caddy, or Traefik) in front of port 3000 to handle TLS/SSL. A minimal Caddy example.
+
+```
+forms.yourdomain.com {
+    reverse_proxy localhost:3000
+}
+```
+
+Caddy handles Let's Encrypt certificates automatically. With Nginx, use certbot or similar.
+
+6. Point your DNS A record for `forms.yourdomain.com` to the server IP.
+
+7. Visit `https://forms.yourdomain.com/register` to create the first admin.
+
+**With a managed container platform (e.g. Railway, Render, Fly.io)**
+
+1. Create a PostgreSQL database on the platform.
+
+2. Deploy the app using the included `Dockerfile`. Set the environment variables in the platform dashboard. Make sure `APP_URL` matches the URL the platform assigns (or your custom domain).
+
+3. Run database migrations. Most platforms let you set a release command.
+
+```bash
+npx prisma migrate deploy
+```
+
+4. The app listens on port 3000 by default. Set the `PORT` environment variable if the platform requires a different port.
+
+**Important notes for production**
+
+- `APP_URL` must match the public URL exactly (including `https://`). This is used to generate shareable form links.
+- Use a strong, unique `ENCRYPTION_KEY` and `JWT_SECRET`. Never reuse these across environments.
+- The bundled `docker-compose.yml` uses default PostgreSQL credentials (`postgres/postgres`). Change these for production.
+- The application runs background cron jobs (retry failed submissions every 2 minutes, cleanup daily at 3 AM) inside the same process. No separate worker is needed.
+- If using an external PostgreSQL database, remove the `db` and `migrations` services from `docker-compose.yml` and run `npx prisma migrate deploy` manually or as a release command.
 
 ## Environment Variables
 
