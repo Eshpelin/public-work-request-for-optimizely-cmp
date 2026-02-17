@@ -3,8 +3,10 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentUser } from "@/lib/security/auth";
 import { generateToken } from "@/lib/security/tokens";
+import { validateCsrf } from "@/lib/security/csrf";
 import { AppError, ErrorCode, formatErrorResponse } from "@/lib/errors";
 import logger from "@/lib/logging/logger";
+import { logAudit } from "@/lib/audit";
 
 const createUrlsSchema = z.object({
   count: z.number().int().min(1).max(500).default(1),
@@ -18,6 +20,13 @@ export async function POST(
   const requestId = crypto.randomUUID();
 
   try {
+    if (!validateCsrf(request)) {
+      return NextResponse.json(
+        formatErrorResponse(new AppError("CSRF validation failed", 403, ErrorCode.UNAUTHORIZED, requestId), requestId),
+        { status: 403 }
+      );
+    }
+
     const user = await getCurrentUser();
     if (!user) {
       throw new AppError("Authentication required", 401, ErrorCode.UNAUTHORIZED, requestId);
@@ -77,6 +86,15 @@ export async function POST(
       { requestId, userId: user.sub, formId, count: parsed.count },
       "Generated form URLs"
     );
+
+    logAudit({
+      action: "url.generate",
+      entity: "FormUrl",
+      entityId: formId,
+      details: { count: parsed.count },
+      adminId: user.sub,
+      ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined,
+    });
 
     return NextResponse.json({ urls }, { status: 201 });
   } catch (error) {

@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentUser } from "@/lib/security/auth";
+import { validateCsrf } from "@/lib/security/csrf";
 import { AppError, ErrorCode, formatErrorResponse } from "@/lib/errors";
 import logger from "@/lib/logging/logger";
+import { logAudit } from "@/lib/audit";
 
 const updateFormSchema = z.object({
   title: z.string().min(1).optional(),
@@ -71,6 +73,13 @@ export async function PATCH(
   const requestId = crypto.randomUUID();
 
   try {
+    if (!validateCsrf(request)) {
+      return NextResponse.json(
+        formatErrorResponse(new AppError("CSRF validation failed", 403, ErrorCode.UNAUTHORIZED, requestId), requestId),
+        { status: 403 }
+      );
+    }
+
     const user = await getCurrentUser();
     if (!user) {
       throw new AppError("Authentication required", 401, ErrorCode.UNAUTHORIZED, requestId);
@@ -99,6 +108,15 @@ export async function PATCH(
     });
 
     logger.info({ requestId, userId: user.sub, formId }, "Updated form");
+
+    logAudit({
+      action: "form.update",
+      entity: "PublicForm",
+      entityId: formId,
+      details: parsed,
+      adminId: user.sub,
+      ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined,
+    });
 
     return NextResponse.json({ form: updatedForm });
   } catch (error) {
@@ -136,6 +154,13 @@ export async function DELETE(
   const requestId = crypto.randomUUID();
 
   try {
+    if (!validateCsrf(request)) {
+      return NextResponse.json(
+        formatErrorResponse(new AppError("CSRF validation failed", 403, ErrorCode.UNAUTHORIZED, requestId), requestId),
+        { status: 403 }
+      );
+    }
+
     const user = await getCurrentUser();
     if (!user) {
       throw new AppError("Authentication required", 401, ErrorCode.UNAUTHORIZED, requestId);
@@ -156,6 +181,15 @@ export async function DELETE(
     });
 
     logger.info({ requestId, userId: user.sub, formId }, "Deleted form");
+
+    logAudit({
+      action: "form.delete",
+      entity: "PublicForm",
+      entityId: formId,
+      details: { title: existing.title },
+      adminId: user.sub,
+      ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined,
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

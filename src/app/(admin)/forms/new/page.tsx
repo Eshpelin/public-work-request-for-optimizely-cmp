@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { getCsrfToken } from "@/lib/csrf-client";
 import {
   Button,
   Input,
@@ -113,7 +114,7 @@ export default function NewFormPage() {
     try {
       const res = await fetch("/api/v1/forms", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
         body: JSON.stringify({
           title: title.trim(),
           description: description.trim() || undefined,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revokeToken } from "@/lib/security/auth";
 import { formatErrorResponse } from "@/lib/errors";
 import logger from "@/lib/logging/logger";
+import { logAudit } from "@/lib/audit";
 
 export async function POST(request: NextRequest) {
   const requestId = crypto.randomUUID();
@@ -24,6 +25,12 @@ export async function POST(request: NextRequest) {
     });
 
     logger.info({ requestId }, "User logged out");
+
+    logAudit({
+      action: "admin.logout",
+      entity: "AdminUser",
+      ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined,
+    });
 
     return response;
   } catch (error) {

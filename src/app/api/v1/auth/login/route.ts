@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { verifyPassword, createToken } from "@/lib/security/auth";
+import { generateCsrfToken, setCsrfCookie } from "@/lib/security/csrf";
 import { AppError, ErrorCode, formatErrorResponse } from "@/lib/errors";
 import logger from "@/lib/logging/logger";
+import { logAudit } from "@/lib/audit";
 
 const loginSchema = z.object({
   email: z.string().email("A valid email address is required"),
@@ -60,7 +62,19 @@ export async function POST(request: NextRequest) {
       maxAge: 86400,
     });
 
+    const csrfToken = generateCsrfToken();
+    setCsrfCookie(response, csrfToken);
+
     logger.info({ requestId, userId: user.id }, "Admin user logged in");
+
+    logAudit({
+      action: "admin.login",
+      entity: "AdminUser",
+      entityId: user.id,
+      details: { email: user.email },
+      adminId: user.id,
+      ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined,
+    });
 
     return response;
   } catch (error) {

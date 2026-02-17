@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { getCsrfToken } from "@/lib/csrf-client";
 import {
   Button,
   Input,
@@ -65,7 +66,7 @@ export default function SettingsPage() {
     try {
       const res = await fetch("/api/v1/settings/credentials", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
         body: JSON.stringify({ clientId, clientSecret, label }),
       });
 
@@ -93,7 +94,7 @@ export default function SettingsPage() {
     try {
       const res = await fetch("/api/v1/settings/credentials", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
         body: JSON.stringify({ id, isActive: true }),
       });
 

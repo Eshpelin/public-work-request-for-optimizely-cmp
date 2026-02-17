@@ -5,8 +5,10 @@ import { prisma } from "@/lib/db/prisma";
 import { getCurrentUser } from "@/lib/security/auth";
 import { getCmpClient } from "@/lib/cmp-client/helpers";
 import { generateToken } from "@/lib/security/tokens";
+import { validateCsrf } from "@/lib/security/csrf";
 import { AppError, ErrorCode, formatErrorResponse } from "@/lib/errors";
 import logger from "@/lib/logging/logger";
+import { logAudit } from "@/lib/audit";
 
 const createFormSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -62,6 +64,13 @@ export async function POST(request: NextRequest) {
   const requestId = crypto.randomUUID();
 
   try {
+    if (!validateCsrf(request)) {
+      return NextResponse.json(
+        formatErrorResponse(new AppError("CSRF validation failed", 403, ErrorCode.UNAUTHORIZED, requestId), requestId),
+        { status: 403 }
+      );
+    }
+
     const user = await getCurrentUser();
     if (!user) {
       throw new AppError("Authentication required", 401, ErrorCode.UNAUTHORIZED, requestId);
@@ -135,6 +144,15 @@ export async function POST(request: NextRequest) {
       { requestId, userId: user.sub, formId: form.id },
       "Created new public form"
     );
+
+    logAudit({
+      action: "form.create",
+      entity: "PublicForm",
+      entityId: form.id,
+      details: { title: form.title, accessType: form.accessType },
+      adminId: user.sub,
+      ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined,
+    });
 
     return NextResponse.json(
       {

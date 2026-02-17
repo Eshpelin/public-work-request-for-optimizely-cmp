@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { getCsrfToken } from "@/lib/csrf-client";
 import {
   Button,
   Chip,
@@ -150,7 +151,7 @@ export default function FormDetailPage() {
     try {
       const res = await fetch(`/api/v1/forms/${formId}/urls`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
         body: JSON.stringify({ count: 1 }),
       });
       if (!res.ok) throw new Error("Failed to generate URL");
@@ -170,7 +171,7 @@ export default function FormDetailPage() {
     try {
       const res = await fetch(`/api/v1/forms/${formId}/urls`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-CSRF-Token": getCsrfToken() },
         body: JSON.stringify({
           count,
           expiresAt: expiryDate || undefined,

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@heroui/react";
 import Link from "next/link";
+import { getCsrfToken } from "@/lib/csrf-client";
 
 const navItems = [
   { label: "Dashboard", href: "/dashboard" },
@@ -24,7 +25,10 @@ export default function AdminLayout({
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
-      await fetch("/api/v1/auth/logout", { method: "POST" });
+      await fetch("/api/v1/auth/logout", {
+        method: "POST",
+        headers: { "X-CSRF-Token": getCsrfToken() },
+      });
     } finally {
       router.push("/login");
     }

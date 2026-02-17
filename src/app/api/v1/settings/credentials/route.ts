@@ -3,8 +3,10 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { getCurrentUser } from "@/lib/security/auth";
 import { encrypt } from "@/lib/security/encryption";
+import { validateCsrf } from "@/lib/security/csrf";
 import { AppError, ErrorCode, formatErrorResponse } from "@/lib/errors";
 import logger from "@/lib/logging/logger";
+import { logAudit } from "@/lib/audit";
 
 const createCredentialSchema = z.object({
   clientId: z.string().min(1, "Client ID is required"),
@@ -80,6 +82,13 @@ export async function POST(request: NextRequest) {
   const requestId = crypto.randomUUID();
 
   try {
+    if (!validateCsrf(request)) {
+      return NextResponse.json(
+        formatErrorResponse(new AppError("CSRF validation failed", 403, ErrorCode.UNAUTHORIZED, requestId), requestId),
+        { status: 403 }
+      );
+    }
+
     const user = await requireAuth(requestId);
 
     const body = await request.json();
@@ -106,6 +115,15 @@ export async function POST(request: NextRequest) {
       { requestId, userId: user.sub, credentialId: credential.id },
       "CMP credential created"
     );
+
+    logAudit({
+      action: "credential.create",
+      entity: "CmpCredential",
+      entityId: credential.id,
+      details: { label: credential.label },
+      adminId: user.sub,
+      ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined,
+    });
 
     return NextResponse.json(
       { credential: sanitizeCredential(credential) },
@@ -141,6 +159,13 @@ export async function PATCH(request: NextRequest) {
   const requestId = crypto.randomUUID();
 
   try {
+    if (!validateCsrf(request)) {
+      return NextResponse.json(
+        formatErrorResponse(new AppError("CSRF validation failed", 403, ErrorCode.UNAUTHORIZED, requestId), requestId),
+        { status: 403 }
+      );
+    }
+
     const user = await requireAuth(requestId);
 
     const body = await request.json();
@@ -170,6 +195,15 @@ export async function PATCH(request: NextRequest) {
       { requestId, userId: user.sub, credentialId: credential.id },
       "CMP credential updated"
     );
+
+    logAudit({
+      action: "credential.update",
+      entity: "CmpCredential",
+      entityId: credential.id,
+      details: { label: credential.label, isActive: credential.isActive },
+      adminId: user.sub,
+      ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined,
+    });
 
     return NextResponse.json({ credential: sanitizeCredential(credential) });
   } catch (error) {

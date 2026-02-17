@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db/prisma";
 import { hashPassword, createToken } from "@/lib/security/auth";
 import { AppError, ErrorCode, formatErrorResponse } from "@/lib/errors";
 import logger from "@/lib/logging/logger";
+import { logAudit } from "@/lib/audit";
 
 const registerSchema = z.object({
   email: z.string().email("A valid email address is required"),
@@ -63,6 +64,15 @@ export async function POST(request: NextRequest) {
     });
 
     logger.info({ requestId, userId: user.id }, "Admin user registered");
+
+    logAudit({
+      action: "admin.register",
+      entity: "AdminUser",
+      entityId: user.id,
+      details: { email: user.email },
+      adminId: user.id,
+      ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined,
+    });
 
     return response;
   } catch (error) {

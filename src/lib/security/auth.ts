@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
+import { prisma } from "@/lib/db/prisma";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 const JWT_EXPIRY = "24h";
@@ -52,7 +53,18 @@ export async function getCurrentUser(): Promise<JwtPayload | null> {
   const token = await getAuthToken();
   if (!token) return null;
   try {
-    return verifyToken(token);
+    const payload = verifyToken(token);
+
+    const adminUser = await prisma.adminUser.findUnique({
+      where: { id: payload.sub },
+      select: { isActive: true },
+    });
+
+    if (!adminUser || !adminUser.isActive) {
+      return null;
+    }
+
+    return payload;
   } catch {
     return null;
   }

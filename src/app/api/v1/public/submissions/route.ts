@@ -9,6 +9,7 @@ import { validateAllFields } from "@/lib/form-engine/validators";
 import { serializeFormData } from "@/lib/form-engine/serializers";
 import { formatErrorResponse } from "@/lib/errors";
 import logger from "@/lib/logging/logger";
+import { logAudit } from "@/lib/audit";
 import type { CmpFormField } from "@/types";
 
 /** Rate limit public submissions to 5 requests per minute per IP. */
@@ -256,6 +257,14 @@ export async function POST(request: NextRequest) {
 
     // Prevent unhandled rejection warnings.
     backgroundPromise.catch(() => {});
+
+    logAudit({
+      action: "submission.create",
+      entity: "Submission",
+      entityId: submission.id,
+      details: { formId: formUrl.form.id, urlId: formUrl.id },
+      ipAddress: ip !== "unknown" ? ip : undefined,
+    });
 
     return NextResponse.json(
       {
